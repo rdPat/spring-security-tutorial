@@ -9,9 +9,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
-import java.util.Optional;
+
 @Service
 public class MyUserDetailsService implements UserDetailsService {
 
@@ -21,33 +20,69 @@ public class MyUserDetailsService implements UserDetailsService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public Users createUser(Users user)
-    {
+
+    // -------------------------------
+    // CREATE USER (sign-up)
+    // -------------------------------
+    public Users createUser(Users user) {
+
+        // Check if username already exists
         Users existingUser = userRepo.findByUsername(user.getUsername());
         if (existingUser != null) {
-            throw new UsernameNotFoundException("User already exists with username: " + user.getUsername());
+            throw new IllegalArgumentException(
+                    "User already exists with username: " + user.getUsername()
+            );
         }
 
-        user.setPassword(passwordEncoder.encode(user.getPassword())); // encode plain password
-        return userRepo.save(user); // return saved user
+        // Encode password and save user
+        String rawPassword = user.getPassword();
+        user.setPassword(passwordEncoder.encode(rawPassword));
 
+        Users saved = userRepo.save(user);
+
+        // Return output with plain password (if required)
+        Users output = new Users();
+        output.setUserId(saved.getUserId());
+        output.setUsername(saved.getUsername());
+        output.setPassword(rawPassword);
+
+        return output;
     }
 
-    public List<Users> fetchUsers()
-    {
-        List<Users> userList=userRepo.findAll();
-        return userList;
 
+    // -------------------------------
+    // FETCH ALL USERS (not needed for auth)
+    // -------------------------------
+    public List<Users> fetchUsers() {
+        return userRepo.findAll();
     }
 
+
+    // -------------------------------
+    // SPRING SECURITY AUTHENTICATION
+    // This method is AUTOMATICALLY called by AuthenticationManager
+    // -------------------------------
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-       Users user=userRepo.findByUsername(username);
 
-       if(user==null)
-       {
-           System.out.println("User Not Found.......");
-       }
-       return new UserPrincipal(user);
+        System.out.println("loadUserByUsername called for: " + username);
+
+        Users user = userRepo.findByUsername(username);
+
+        if (user == null) {
+            throw new UsernameNotFoundException(
+                    "User not found with username: " + username
+            );
+        }
+
+        return new UserPrincipal(user);
+    }
+
+
+    // -------------------------------
+    // EXTRA HELPER METHOD
+    // -------------------------------
+    public Users getUserByUsername(String username) {
+        return userRepo.findByUsername(username);
     }
 }

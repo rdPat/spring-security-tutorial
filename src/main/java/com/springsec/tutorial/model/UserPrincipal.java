@@ -3,34 +3,36 @@ package com.springsec.tutorial.model;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 public class UserPrincipal implements UserDetails {
 
-    private Users user;
+    private final Users user;
 
     public UserPrincipal(Users user) {
-        this.user=user;
+        this.user = user;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-
+        // If your Users table has a role column, replace with user.getRole()
         return Collections.singleton(new SimpleGrantedAuthority("USER"));
     }
 
     @Override
     public String getPassword() {
-        return user.getPassword();
+        return user.getPassword(); // already encrypted
     }
 
     @Override
     public String getUsername() {
         return user.getUsername();
+    }
+
+    public Long getUserId() {
+        return user.getUserId();
     }
 
     @Override
